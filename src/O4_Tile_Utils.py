@@ -188,7 +188,7 @@ def rebuild_packs_ini(build_dir):
 
     UI.vprint(1, packsfile, ' rebuilt.')
 
-def copy_and_fix_ini(tile):
+def copy_overlays(tile):
     overlay_src_dir = pathlib.Path(FNAMES.Overlay_dir, 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
     overlay_custom_dst_dir = pathlib.Path(tile.custom_build_dir, 'yOrtho4XP_Overlays', 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
     UI.vprint(1,'*** Do copy of overlay data to plugin folder***') 
@@ -202,13 +202,11 @@ def copy_and_fix_ini(tile):
     for dsf in overlay_src_dir.glob('*.dsf'):
         shutil.copy2(str(dsf), str(overlay_custom_dst_dir))
 
-    add_to_custom_scenery_ini_if_not_exist(tile.custom_build_dir,FNAMES.tile_dir(tile.lat,tile.lon))
-
 
 ##############################################################################
 
 ##############################################################################
-def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_ptc,copy_over=False):
+def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_ptc,should_copy_overlays,should_rebuild_ini):
     if UI.is_working: return 0
     UI.red_flag=0
     timer=time.time()
@@ -238,15 +236,18 @@ def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_pt
         if do_ovl: 
             OVL.build_overlay(lat,lon)
             if UI.red_flag: UI.exit_message_and_bottom_line(); return 0
-        if copy_over:
-            copy_and_fix_ini(tile)
+        if should_copy_overlays:
+            copy_overlays(tile)
+            if UI.red_flag: UI.exit_message_and_bottom_line(); return 0
+        if should_rebuild_ini:
+            add_to_custom_scenery_ini_if_not_exist(tile.custom_build_dir,FNAMES.tile_dir(tile.lat,tile.lon))
             if UI.red_flag: UI.exit_message_and_bottom_line(); return 0
         try:
             UI.gui.earth_window.canvas.delete(UI.gui.earth_window.dico_tiles_todo[(lat,lon)]) 
             UI.gui.earth_window.dico_tiles_todo.pop((lat,lon),None)
         except Exception as e:
             print(e)
-    if copy_over:
+    if should_rebuild_ini:
         rebuild_packs_ini(tile.custom_build_dir)
     UI.lvprint(0,"Batch process completed in",UI.nicer_timer(time.time()-timer))
     return 1

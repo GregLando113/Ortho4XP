@@ -768,7 +768,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
     resolution=2**earthzl*256
     
     list_del_ckbtn = ['OSM data','Mask data','Jpeg imagery','Tile (whole)','Tile (textures)']
-    list_do_ckbtn  = ['Assemble vector data','Triangulate 3D mesh','Draw water masks','Build imagery/DSF','Extract overlays','Read per tile cfg', 'Copy & Fix scenery_packs.ini when done'] 
+    list_do_ckbtn  = ['Assemble vector data','Triangulate 3D mesh','Draw water masks','Build imagery/DSF','Extract overlays', 'Copy overlays to build dir', 'Add new tiles + rebuild scenery_packs.ini', 'Read per tile cfg'] 
     
     canvas_min_x=900
     canvas_min_y=700
@@ -1109,7 +1109,8 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         except:
             return 0
         args=[tile,list_lat_lon,self.v_['Assemble vector data'].get(),self.v_['Triangulate 3D mesh'].get(),self.v_['Draw water masks'].get(),
-              self.v_['Build imagery/DSF'].get(),self.v_['Extract overlays'].get(),self.v_['Read per tile cfg'].get(),self.v_['Copy & Fix scenery_packs.ini when done'].get()]
+              self.v_['Build imagery/DSF'].get(),self.v_['Extract overlays'].get(),self.v_['Read per tile cfg'].get(),
+              self.v_['Copy overlays to build dir'].get(),self.v_['Add new tiles + rebuild scenery_packs.ini'].get()]
         threading.Thread(target=TILE.build_tile_list,args=args).start()
         return
         
