@@ -144,7 +144,7 @@ def build_all(tile):
 
 
 def add_to_custom_scenery_ini_if_not_exist(build_dir, pack):
-    packsfile = os.path.join([build_dir, 'scenery_packs.ini'])
+    packsfile = os.path.join(build_dir, 'scenery_packs.ini')
     name = f'SCENERY_PACK Custom Scenery/{pack}/\n'
     
     with open(packsfile, 'r') as f:
@@ -158,23 +158,10 @@ def add_to_custom_scenery_ini_if_not_exist(build_dir, pack):
     with open(packsfile, 'a') as f:
         f.writelines([name])
 
-    
-
-
-def copy_and_fix_ini(tile):
-    overlay_src_dir = pathlib.Path(FNAMES.Overlay_dir, 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
-    overlay_custom_dst_dir = pathlib.Path(tile.custom_build_dir, 'yOrtho4XP_Overlays', 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
-    UI.vprint(1,'*** Do copy of overlay data to plugin folder***') 
-    UI.vprint(1,'\toverlay_src_dir=',str(overlay_src_dir)) 
-    UI.vprint(1,'\toverlay_custom_dst_dir=',str(overlay_custom_dst_dir)) 
-    UI.vprint(1,'***                                         ***') 
-
-    shutil.copytree(str(overlay_src_dir),str(overlay_custom_dst_dir),dirs_exist_ok=True)
-    add_to_custom_scenery_ini_if_not_exist(tile.custom_build_dir,FNAMES.tile_dir(tile.lat,tile.lon))
 
 def rebuild_packs_ini(build_dir):
     '''Ensure all ortho packs are loaded last in sceneries'''
-    packsfile = os.path.join([build_dir, 'scenery_packs.ini'])
+    packsfile = os.path.join(build_dir, 'scenery_packs.ini')
 
     other_packs = []
     ortho_packs = []
@@ -191,15 +178,31 @@ def rebuild_packs_ini(build_dir):
     with open(packsfile, 'w') as f:
         UI.vprint(1,'Scenery.ini other_packs:')
         for p in other_packs:
-            UI.vprint(1,'\t',p)
+            UI.vprint(1,'\t',p[:-1])
         f.writelines(other_packs)
         f.writelines(['SCENERY_PACK Custom Scenery/yOrtho4XP_Overlays/\n'])
         UI.vprint(1,'Scenery.ini ortho_packs:')
         for p in ortho_packs:
-            UI.vprint(1,'\t',p)
+            UI.vprint(1,'\t',p[:-1])
         f.writelines(ortho_packs)
 
     UI.vprint(1, packsfile, ' rebuilt.')
+
+def copy_and_fix_ini(tile):
+    overlay_src_dir = pathlib.Path(FNAMES.Overlay_dir, 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
+    overlay_custom_dst_dir = pathlib.Path(tile.custom_build_dir, 'yOrtho4XP_Overlays', 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
+    UI.vprint(1,'*** Do copy of overlay data to plugin folder***') 
+    UI.vprint(1,'\toverlay_src_dir=',str(overlay_src_dir)) 
+    UI.vprint(1,'\toverlay_custom_dst_dir=',str(overlay_custom_dst_dir)) 
+    UI.vprint(1,'***                                         ***')
+
+    if not overlay_custom_dst_dir.exists():
+        overlay_custom_dst_dir.mkdir(parents=True)
+
+    for dsf in overlay_src_dir.glob('*.dsf'):
+        shutil.copy2(str(dsf), str(overlay_custom_dst_dir))
+
+    add_to_custom_scenery_ini_if_not_exist(tile.custom_build_dir,FNAMES.tile_dir(tile.lat,tile.lon))
 
 
 ##############################################################################
