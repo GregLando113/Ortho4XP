@@ -3,6 +3,7 @@ import time
 import shutil
 import queue
 import threading
+import pathlib
 import O4_UI_Utils as UI
 import O4_File_Names as FNAMES
 import O4_Imagery_Utils as IMG
@@ -140,7 +141,71 @@ def build_all(tile):
 ##############################################################################
 
 ##############################################################################
-def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_ptc):
+
+
+def add_to_custom_scenery_ini_if_not_exist(build_dir, pack):
+    packsfile = os.path.join([build_dir, 'scenery_packs.ini'])
+    name = f'SCENERY_PACK Custom Scenery/{pack}/\n'
+    
+    with open(packsfile, 'r') as f:
+        for ln in f.readlines():
+            if ln == name:
+                UI.vprint(1,'"',name[:-1],'"', ' already exists in scenery_packs.ini') 
+                return
+    
+    
+    UI.vprint(1,'Writing "',name[:-1],'"', ' to scenery_packs.ini') 
+    with open(packsfile, 'a') as f:
+        f.writelines([name])
+
+    
+
+
+def copy_and_fix_ini(tile):
+    overlay_src_dir = pathlib.Path(FNAMES.Overlay_dir, 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
+    overlay_custom_dst_dir = pathlib.Path(tile.custom_build_dir, 'yOrtho4XP_Overlays', 'Earth nav data', FNAMES.round_latlon(tile.lat,tile.lon))
+    UI.vprint(1,'*** Do copy of overlay data to plugin folder***') 
+    UI.vprint(1,'\toverlay_src_dir=',str(overlay_src_dir)) 
+    UI.vprint(1,'\toverlay_custom_dst_dir=',str(overlay_custom_dst_dir)) 
+    UI.vprint(1,'***                                         ***') 
+
+    shutil.copytree(str(overlay_src_dir),str(overlay_custom_dst_dir),dirs_exist_ok=True)
+    add_to_custom_scenery_ini_if_not_exist(tile.custom_build_dir,FNAMES.tile_dir(tile.lat,tile.lon))
+
+def rebuild_packs_ini(build_dir):
+    '''Ensure all ortho packs are loaded last in sceneries'''
+    packsfile = os.path.join([build_dir, 'scenery_packs.ini'])
+
+    other_packs = []
+    ortho_packs = []
+    has_overlay = False
+    with open(packsfile, 'r') as f:
+        for ln in f.readlines():
+            if 'yOrtho4XP_Overlays' in ln:
+                has_overlay = True
+            elif 'zOrtho4XP' in ln:
+                ortho_packs.append(ln)
+            else:
+                other_packs.append(ln)
+    
+    with open(packsfile, 'w') as f:
+        UI.vprint(1,'Scenery.ini other_packs:')
+        for p in other_packs:
+            UI.vprint(1,'\t',p)
+        f.writelines(other_packs)
+        f.writelines(['SCENERY_PACK Custom Scenery/yOrtho4XP_Overlays/\n'])
+        UI.vprint(1,'Scenery.ini ortho_packs:')
+        for p in ortho_packs:
+            UI.vprint(1,'\t',p)
+        f.writelines(ortho_packs)
+
+    UI.vprint(1, packsfile, ' rebuilt.')
+
+
+##############################################################################
+
+##############################################################################
+def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_ptc,copy_over=False):
     if UI.is_working: return 0
     UI.red_flag=0
     timer=time.time()
@@ -152,6 +217,7 @@ def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_pt
         (tile.lat,tile.lon)=(lat,lon)
         tile.build_dir=FNAMES.build_dir(tile.lat,tile.lon,tile.custom_build_dir)
         tile.dem=None
+        UI.vprint(1,"Tile.build_dir=", tile.build_dir) 
         if do_ptc: tile.read_from_config()
         if (do_osm or do_mesh or do_dsf): tile.make_dirs()
         if do_osm: 
@@ -169,11 +235,16 @@ def build_tile_list(tile,list_lat_lon,do_osm,do_mesh,do_mask,do_dsf,do_ovl,do_pt
         if do_ovl: 
             OVL.build_overlay(lat,lon)
             if UI.red_flag: UI.exit_message_and_bottom_line(); return 0
+        if copy_over:
+            copy_and_fix_ini(tile)
+            if UI.red_flag: UI.exit_message_and_bottom_line(); return 0
         try:
             UI.gui.earth_window.canvas.delete(UI.gui.earth_window.dico_tiles_todo[(lat,lon)]) 
             UI.gui.earth_window.dico_tiles_todo.pop((lat,lon),None)
         except Exception as e:
             print(e)
+    if copy_over:
+        rebuild_packs_ini(tile.custom_build_dir)
     UI.lvprint(0,"Batch process completed in",UI.nicer_timer(time.time()-timer))
     return 1
 ##############################################################################
