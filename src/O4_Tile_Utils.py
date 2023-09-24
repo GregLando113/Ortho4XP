@@ -165,11 +165,17 @@ def rebuild_packs_ini(build_dir):
 
     other_packs = []
     ortho_packs = []
+    ao_packs = []
     has_overlay = False
+    has_ao_overlay = False
     with open(packsfile, 'r') as f:
         for ln in f.readlines():
             if 'yOrtho4XP_Overlays' in ln:
                 has_overlay = True
+            elif 'yAutoOrtho_Overlays' in ln:
+                has_ao_overlay = True
+            elif 'z_autoortho' in ln or 'z_ao' in ln:
+                ao_packs.append(ln)
             elif 'zOrtho4XP' in ln:
                 ortho_packs.append(ln)
             else:
@@ -185,6 +191,12 @@ def rebuild_packs_ini(build_dir):
         for p in ortho_packs:
             UI.vprint(1,'\t',p[:-1])
         f.writelines(ortho_packs)
+        if has_ao_overlay:
+            f.writelines(['SCENERY_PACK Custom Scenery/yAutoOrtho_Overlays/\n'])
+        for p in ao_packs:
+            UI.vprint(1,'\t',p[:-1])
+
+
 
     UI.vprint(1, packsfile, ' rebuilt.')
 
