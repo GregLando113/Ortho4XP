@@ -193,8 +193,10 @@ def rebuild_packs_ini(build_dir):
         f.writelines(ortho_packs)
         if has_ao_overlay:
             f.writelines(['SCENERY_PACK Custom Scenery/yAutoOrtho_Overlays/\n'])
+        UI.vprint(1,'Scenery.ini autoortho_packs:')
         for p in ao_packs:
             UI.vprint(1,'\t',p[:-1])
+        f.writelines(ao_packs)
 
 
 
